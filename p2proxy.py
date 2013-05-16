@@ -10,6 +10,8 @@ import requests
  
 log.startLogging(sys.stdout)
 
+LOGINID = ''
+PASSWORD = ''
 
 class P2Browser(object):
     browser = None
@@ -133,7 +135,7 @@ log.msg('>>> LOGIN P2 START')
 p2 = P2Browser()
 log.msg('>>> P2 Browser Initializing...')
 try:
-  p2.login(loginid='shibata.michihiro@gmail.com', password='19841005')
+  p2.login(loginid=LOGINID, password=PASSWORD)
   log.msg('>>> P2 Browser Initializing...done')
 except Exception as e:
   log.msg('>>> ============================')
