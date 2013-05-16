@@ -28,6 +28,10 @@ Linux や BSDな どをお使いの方でも使えるとは思いますが設定
 -----
 
 ### なにはともあれ
+
+p2python.py を開いて LOGINID, PASSWORD へ P2 のログインIDとパスワードを入力してください。  
+その後で下記コマンドを実行。
+
 > pip install < requirement.txt  
 > python p2proxy.py
 
