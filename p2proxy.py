@@ -8,7 +8,6 @@ import mechanize
 import cookielib
 import requests
  
-# とりあえずログを標準出力へ
 log.startLogging(sys.stdout)
 
 
@@ -27,7 +26,7 @@ class P2Browser(object):
         self.browser.set_cookiejar(self.cookiejar)
 
         # Setting browser options
-        self.browser.set_handle_gzip(False)
+        self.browser.set_handle_gzip(True)
         self.browser.set_handle_equiv(True)
         self.browser.set_handle_redirect(True)
         self.browser.set_handle_referer(True)
@@ -37,7 +36,6 @@ class P2Browser(object):
         self.browser.set_debug_http(False) # HTTPのヘッダを表示
         self.browser.addheaders = [('User-agent',
             ('Mozilla/5.0 (Windows; U; Windows NT 5.1; rv:1.7.3)' ' Gecko/20041001 P2ProxyMac/0.1'))]
-
 
     def login(self, loginid='', password=''):
         self.browser.open('http://p2.2ch.net/p2/')
@@ -49,9 +47,10 @@ class P2Browser(object):
         self.browser.submit()
 
 
-
 # プロキシリクエストのクラス
 class P2ProxyRequest(proxy.ProxyRequest):
+#  protocols = {'http': P2ProxyClientFactory}
+
   # processメソッドを継承
   def process(self):
     log.msg('>>>> process start...')
@@ -71,7 +70,8 @@ class P2ProxyRequest(proxy.ProxyRequest):
 
     # 2p.2ch.net 以外の *.2ch.net
     sp = host.split('.')
-    if self.method == 'POST' and sp[0] != 'p2' and sp[1] == '2ch' and sp[2] == 'net':
+    if self.method == 'POST' and ((sp[0] != 'p2' and sp[1] == '2ch' and sp[2] == 'net') or
+                                  (sp[0] != 'p2' and sp[1] == 'bbspink' and sp[2] == 'com')):
       self.host = host
       self.post_process()
 
@@ -93,27 +93,34 @@ class P2ProxyRequest(proxy.ProxyRequest):
     """
     p2.2ch.net 以外の *.2ch.net への書き込み
     """
-    print '>>>> post_process...'
+    log.msg('>>>> post_process...')
     global p2
     if not p2.cookiejar:
       return False
 
-    print '>>> SUBMIT...'
+    log.msg('>>> SUBMIT...')
     p2.browser.open('http://p2.2ch.net/p2/post_form.php?host=%s&bbs=%s&key=%s' % (self.host, self.args.get('bbs')[0], self.args.get('key')[0]))
     body = p2.browser.response().read()
     p2.browser.select_form(nr=0)
     p2.browser.form['FROM'] = self.args.get('FROM', [''])[0]
     p2.browser.form['mail'] = self.args.get('mail', [''])[0]
     p2.browser.form['MESSAGE'] = self.args.get('MESSAGE', [''])[0]
-    p2.browser.submit()
-    print '>>> SUBMIT...done'
-    print '>>>> post_process...done'
+    r = p2.browser.submit()
+    #log.msg(r.read())
+    log.msg('>>> SUBMIT...done')
+    log.msg('>>>> post_process...done')
 
 
 
 # プロキシクラスを継承
 class P2Proxy(proxy.Proxy):
   requestFactory = P2ProxyRequest
+  def dataReceived(self, data):
+    log.msg('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+    log.msg(data)
+    log.msg('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+    # perform the default functionality on modified data 
+    return proxy.Proxy.dataReceived(self, data)
 
 
 # HTTPプロキシサーバのクラス
@@ -138,5 +145,6 @@ reactor.listenTCP(8081, P2ProxyFactory())
 reactor.run()
 
 log.msg('>>>> P2Proxy...done')
+
 
 
